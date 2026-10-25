@@ -1,0 +1,20 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+# Personal backups and proprietary vendor assets
+*.bin
+*.mxf
+*.dat
+*.exe
+*.dll
+*.zip
+.env
+.env.*
+# Local screenshots may contain private configurations
+*-preview.png

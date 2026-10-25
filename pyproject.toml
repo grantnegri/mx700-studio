@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mx700-studio"
+version = "0.2.1"
+description = "Experimental native Linux MX-700 / B&K SR10.1 configuration workbench"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+dependencies = ["PySide6-Essentials>=6.8,<7"]
+
+[project.scripts]
+mx700-studio = "mx700_studio.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["mx700_studio*"]
+
+[project.urls]
+Homepage = "https://github.com/grantnegri/mx700-studio"
+Issues = "https://github.com/grantnegri/mx700-studio/issues"

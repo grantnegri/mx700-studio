@@ -1,0 +1,19 @@
+# Command assignments and learned IR
+
+`commands.inventory(data)` decodes existing hard and LCD buttons from a full 471040-byte backup. It distinguishes active learned IR, stored inactive learned IR, macros, shortcuts and a built-in/default action. The last category does **not** establish that the database contains a usable signal for that button. MAIN screen device-selection labels are not offered as assignable commands. Reserved keys24/25 are excluded.
+
+`assign_shortcut(data, target_device, target_key, source_device, source_key)` points a button at an existing command. Macro targets are rejected because they would override the new shortcut. An active learned target is retained as inactive by adding the original editor's FF prefix, provided its final byte is FF padding that the original reader restores. Full records ending in another value are rejected rather than truncated. Shortcut chains are resolved; cycles and references to unavailable or reserved buttons are rejected. Macro sources are rejected.
+
+`copy_learned(data, target_device, target_key, source_device, source_key)` copies an existing active 106-byte learned signal verbatim. It resets the destination shortcut to itself and recomputes the destination learned-bank and shortcut checksums. Macro targets and non-learned sources are rejected. These functions return new immutable bytes and do not save or transmit anything themselves. They preserve every unrelated field and reject invalid relevant section checksums. They neither invent IR codes nor implement live IR learning.
+
+## Binary evidence
+
+All RVAs below refer to recovered MXM07M.dll unless another library is named.
+
+- RVA0x152d0 reads21 shortcut devices, each154 bytes, beginning at section offset3. RVA0x15550 reads two bytes per key and calls `ObjItem::SetTargetObjItem`. RVA0x156e0 serializes target device ID and MX7 key ID, falling back to the button's own `(device,key)` pair. RVA0x15920 initializes all77 self-pointers.
+- RVA0x06814 copies that4096-byte section first into the configuration write beginning at remote0x9000. RVA0x154d0 applies the common internal checksum over all4096 bytes: big-endian seed0x0852 plus bytes2 onward.
+- UDJF.dll RVA0x6b2e0 `TKeyRegMX07::GetButtonMapIDMX7KeyID` reads the table at RVA0x186658. Keys0..35 correspond to hard buttons,36..75 to four LCD pages of ten,76 to device selection. Hardware button names correspond to the MXM07M string table at RVA0x32c70. Key17=Right,18=Left,19=Select,20=Up,21=Down. Reserved24/25 map to0x2ff.
+- RVA0x14530 builds21 learned banks of8192 bytes. Their physical block marker is0x52+2*device, matching remote0x52000+8192*device. RVA0x14690 reads106-byte learned records at `bank+3+106*key`. RVA0x1b640 treats two leadingFF bytes as empty, a leadingFF followed by nonFF as stored but inactive, and a nonFF leading byte as active learned code. It calls `SetActionCodeAddLearn` with that flag. Copying the entire record preserves encoding and timings without decoding their waveform. RVA0x148c6 passes `IsActionCodeLearn` into serializer RVA0x1b5a0, which offsets inactive learned data by one byte behind an FF prefix. Reader RVA0x1b640 strips that prefix, copies105 bytes and restores FF at the last byte. Shortcut assignment uses this reversible transformation only when that final byte is alreadyFF.
+- Macro precedence is conservatively guarded using the bank layout independently decoded in the macro module: bank remote0x28000+8192*device, header3 and43 records of190 bytes. Any non-FFFF record at Power On,Power Off or matching LCD position blocks assignment overwrite. This includes before-macros.
+
+Private-fixture integration tests copy an existing learned record between buttons only in memory, reparse and verify source preservation. No changed command was transmitted to hardware during this implementation. Hardware behavior of changed commands therefore remains unverified.
